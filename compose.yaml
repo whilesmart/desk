@@ -1,0 +1,307 @@
+name: desk-local
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: desk
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      POSTGRES_DB: desk
+    volumes:
+    - postgres:/var/lib/postgresql/data
+    - ./config/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U desk
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    volumes:
+    - redis:/data
+  cas:
+    image: desk-local/cas:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_cas
+      SERVER_PORT: '8080'
+      CONSOLE_INTERNAL_URL: http://console-api:8082
+      COOKIE_SECURE: 'false'
+      COOKIE_SAMESITE: Lax
+      ACCOUNT_EMAIL_DOMAINS: mail.example.test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8080/health
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+  console-api:
+    image: desk-local/console-api:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_admin
+      SERVER_PORT: '8082'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8082/health
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+  files-api:
+    image: desk-local/files-api:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_files
+      SERVER_PORT: '8083'
+      STORAGE_DRIVER: filesystem
+      STORAGE_LOCAL_PATH: /data
+      FILES_PUBLIC_URL: http://localhost:3004
+      MAIL_API_URL: http://mail-api:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8083/health
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    volumes:
+    - files:/data
+  mail-api:
+    image: desk-local/mail-api:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_mail
+      SERVER_PORT: '8081'
+      MAIL_PROVIDER: none
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?Run make prepare first}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8081/health
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+  calendar-api:
+    image: desk-local/calendar-api:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_calendar
+      SERVER_PORT: '8084'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8084/health
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+  chat-api:
+    image: desk-local/chat-api:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_chat
+      SERVER_PORT: '8086'
+      FILES_API_URL: http://files-api:8083
+      MAIL_API_URL: http://mail-api:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -q
+      - -O
+      - /dev/null
+      - http://127.0.0.1:8086/health
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+  bootstrap:
+    image: desk-local/cas:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    entrypoint:
+    - bootstrap
+    profiles:
+    - setup
+    environment:
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_USER: desk
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Run make prepare first}
+      DB_SSLMODE: disable
+      CAS_URL: http://cas:8080
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      JWT_SECRET: ${JWT_SECRET:?Run make prepare first}
+      CORS_ORIGINS: ${DESK_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:3007,http://localhost:3008,http://localhost:3009}
+      ORG_ACCESS_API_KEY: ${ORG_ACCESS_API_KEY:?Run make prepare first}
+      DB_NAME: desk_cas
+      BOOTSTRAP_EMAIL: ${BOOTSTRAP_EMAIL}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD}
+    depends_on:
+      cas:
+        condition: service_healthy
+  web:
+    image: desk-local/web:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    ports:
+    - 127.0.0.1:${DESK_ACCOUNTS_PORT:-3000}:3000
+    - 127.0.0.1:${DESK_DASHBOARD_PORT:-3001}:3001
+    - 127.0.0.1:${DESK_MAIL_PORT:-3002}:3002
+    - 127.0.0.1:${DESK_CONSOLE_PORT:-3003}:3003
+    - 127.0.0.1:${DESK_FILES_PORT:-3004}:3004
+    - 127.0.0.1:${DESK_CALENDAR_PORT:-3005}:3005
+    - 127.0.0.1:${DESK_MOMENTS_PORT:-3006}:3006
+    - 127.0.0.1:${DESK_CHAT_PORT:-3007}:3007
+    - 127.0.0.1:${DESK_PLATFORM_PORT:-3008}:3008
+    - 127.0.0.1:${DESK_MINDPAD_PORT:-3009}:3009
+    - 127.0.0.1:${DESK_API_PORT:-8080}:8080
+    depends_on:
+      cas:
+        condition: service_healthy
+      console-api:
+        condition: service_healthy
+      files-api:
+        condition: service_healthy
+      chat-api:
+        condition: service_healthy
+      calendar-api:
+        condition: service_healthy
+      mail-api:
+        condition: service_healthy
+      mindpad:
+        condition: service_started
+  mindpad:
+    image: desk-local/mindpad:${DESK_RELEASE:-v2026.10.21}
+    pull_policy: never
+    ports: []
+    environment:
+      HOST: 0.0.0.0
+      PORT: '3000'
+      NUXT_PUBLIC_API_BASE: /api/mindpad
+      NUXT_PUBLIC_CAS_BASE: ''
+      NUXT_PUBLIC_ACCOUNTS_URL: http://localhost:3000
+    depends_on:
+      files-api:
+        condition: service_healthy
+volumes:
+  postgres: {}
+  redis: {}
+  files: {}

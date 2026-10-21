@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/whilesmart/docs-kit/main/schema/docs.schema.json",
+  "name": "WhileSmart Desk",
+  "description": "Run Desk on your infrastructure and build apps that use CAS authentication.",
+  "icon": "layout-dashboard",
+  "category": {
+    "language": "http"
+  },
+  "sidebar": [
+    {
+      "title": "Install locally",
+      "path": "docs/installation.md"
+    },
+    {
+      "title": "Host Desk",
+      "path": "docs/hosting.md"
+    },
+    {
+      "title": "Build an app",
+      "path": "docs/apps.md"
+    },
+    {
+      "title": "Authentication",
+      "path": "docs/authentication.md"
+    },
+    {
+      "title": "Operations",
+      "path": "docs/operations.md"
+    },
+    {
+      "title": "Questions",
+      "path": "docs/questions.md"
+    },
+    {
+      "title": "Licensing and source access",
+      "path": "docs/licensing.md"
+    }
+  ]
+}
